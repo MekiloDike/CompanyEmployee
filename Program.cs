@@ -1,12 +1,27 @@
+using CompanyEmployee.Context;
 using CompanyEmployee.Extension;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
+using NLog;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 
+builder.Configuration.GetConnectionString("DbConnection");
+builder.Services.AddDbContext<RepositoryContext>(option => option.UseSqlServer(builder.Configuration.GetConnectionString("DbConnection"),
+    sqlServerOptionsAction: sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+    }));
+
+LogManager.LoadConfiguration(string.Concat(Directory.GetCurrentDirectory(),
+"/nlog.config"));
+
 builder.Services.ConfigureCors();
 builder.Services.ConfigureIISIntegration();
+builder.Services.ConfigureLoggerService();
 
 
 builder.Services.AddControllers();
